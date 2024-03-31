@@ -37,26 +37,30 @@ jobs:
           path: dist/*.tar.gz
 
   build_wheels:
-    name: Build wheels on ${{ matrix.os }} (${{ matrix.arch }}, ${{ matrix.opt_level }})
+    name: Build wheels on ${{ matrix.os }} (${{ matrix.arch }}, ${{ matrix.opt_level }}, ${{matrix.gpu}})
     runs-on: ${{ matrix.os }}
     strategy:
       matrix:
         include:
+          # - os: ubuntu-latest
+          #   arch: auto64
+          #   opt_level: avx512
+          # - os: ubuntu-latest
+          #   arch: aarch64
+          #   opt_level: generic
+          # - os: macos-latest
+          #   arch: auto64
+          #   opt_level: avx2
+          # - os: macos-latest
+          #   arch: arm64
+          #   opt_level: generic
+          # - os: windows-latest
+          #   arch: auto64
+          #   opt_level: avx2
           - os: ubuntu-latest
             arch: auto64
+            gpu: ON
             opt_level: avx512
-          - os: ubuntu-latest
-            arch: aarch64
-            opt_level: generic
-          - os: macos-latest
-            arch: auto64
-            opt_level: avx2
-          - os: macos-latest
-            arch: arm64
-            opt_level: generic
-          - os: windows-latest
-            arch: auto64
-            opt_level: avx2
 
     steps:
       - uses: actions/checkout@v4
@@ -82,7 +86,7 @@ jobs:
           CIBW_ARCHS: ${{ matrix.arch }}
           CIBW_ENVIRONMENT_LINUX: >
             FAISS_OPT_LEVEL=${{ matrix.opt_level }}
-            FAISS_ENABLE_GPU=OFF
+            FAISS_ENABLE_GPU=${{ matrix.gpu }}
           CIBW_ENVIRONMENT_MACOS: >
             FAISS_OPT_LEVEL=${{ matrix.opt_level }}
             TARGET_ARCH=${{ matrix.arch }}
@@ -102,25 +106,25 @@ jobs:
             env -u FAISS_OPT_LEVEL pytest {project}/faiss/tests &&
             env -u FAISS_OPT_LEVEL pytest -s {project}/faiss/tests/torch_test_contrib.py
 
-      - uses: actions/upload-artifact@v4
-        with:
-          name: wheel-${{ matrix.os }}-${{ matrix.arch }}-${{ matrix.opt_level }}
-          path: ./wheelhouse/*.whl
+      # - uses: actions/upload-artifact@v4
+      #   with:
+      #     name: wheel-${{ matrix.os }}-${{ matrix.arch }}-${{ matrix.opt_level }}
+      #     path: ./wheelhouse/*.whl
 
-  publish:
-    name: Upload packages to PyPI
-    needs: [build_sdist, build_wheels]
-    runs-on: ubuntu-latest
-    environment:
-      name: pypi
-      url: https://pypi.org/p/faiss-cpu
-    permissions:
-      id-token: write
-    if: github.event_name == 'release' && github.event.action == 'published'
-    steps:
-      - uses: actions/download-artifact@v4
-        with:
-          merge-multiple: true
-          path: dist
+  # publish:
+  #   name: Upload packages to PyPI
+  #   needs: [build_sdist, build_wheels]
+  #   runs-on: ubuntu-latest
+  #   environment:
+  #     name: pypi
+  #     url: https://pypi.org/p/faiss-cpu
+  #   permissions:
+  #     id-token: write
+  #   if: github.event_name == 'release' && github.event.action == 'published'
+  #   steps:
+  #     - uses: actions/download-artifact@v4
+  #       with:
+  #         merge-multiple: true
+  #         path: dist
 
-      - uses: pypa/gh-action-pypi-publish@release/v1
+  #     - uses: pypa/gh-action-pypi-publish@release/v1
